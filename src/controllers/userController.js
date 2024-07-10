@@ -131,5 +131,42 @@ export const logout = (req, res) => {
   req.session.destroy();
   return res.redirect("/");
 };
-export const edit = (req, res) => res.send("Edit User");
+
+export const getEdit = (req, res) => {
+  return res.render("edit-profile", {
+    pagetitle: "Edit Profile",
+  });
+};
+export const postEdit = async (req, res) => {
+  const {
+    session: {
+      user: { _id },
+    },
+    body: { name, email, username, location },
+  } = req;
+  const pageTitle = "Edit Profile";
+  const exists = await User.exists({
+    $or: [{ email }, { username }],
+    _id: { $ne: _id },
+  });
+  if (exists === req.body.email || req.body.username) {
+    return res.status(400).render("edit-profile", {
+      pageTitle,
+      errorMessage: "It is already exists.",
+      name,
+      email,
+      username,
+      location,
+    });
+  } else {
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      { name, email, username, location },
+      { new: true }
+    );
+    req.session.user = updatedUser;
+    return res.redirect("/users/edit");
+  }
+};
+
 export const see = (req, res) => res.send("See User");
